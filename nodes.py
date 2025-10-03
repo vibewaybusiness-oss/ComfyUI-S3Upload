@@ -1052,6 +1052,124 @@ class S3CombineImagesToVideo:
             raise e
 
 
+class GetLastImage:
+    """
+    Get the last image from a list of images.
+    Accepts IMAGE input (list of images) and returns the last image.
+    """
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "images": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("last_image",)
+    FUNCTION = "get_last_image"
+    CATEGORY = "S3/Image Processing"
+    
+    @classmethod
+    def VALIDATE_INPUTS(s, **kwargs):
+        return True
+    
+    def get_last_image(self, images):
+        """
+        Get the last image from a list of images.
+        """
+        try:
+            if images is None or len(images) == 0:
+                raise ValueError("At least one image is required")
+            
+            print(f"DEBUG: GetLastImage called with {len(images)} images")
+            
+            # Get the last image from the list
+            last_image = images[-1]
+            
+            print(f"DEBUG: Successfully extracted last image from list")
+            
+            # Return as single image (add batch dimension if needed)
+            if isinstance(last_image, torch.Tensor):
+                if last_image.ndim == 3:
+                    # Add batch dimension to make it [1, H, W, C]
+                    last_image = last_image.unsqueeze(0)
+                elif last_image.ndim == 4 and last_image.shape[0] == 1:
+                    # Already has batch dimension
+                    pass
+                else:
+                    raise ValueError(f"Unexpected image tensor shape: {last_image.shape}")
+            
+            return (last_image,)
+            
+        except Exception as e:
+            print(f"ERROR in GetLastImage: {str(e)}")
+            raise e
+
+
+class ConcatenateImageLists:
+    """
+    Concatenate two lists of images into one list.
+    Accepts two IMAGE inputs (lists of images) and returns a combined list.
+    """
+
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "images_1": ("IMAGE",),
+                "images_2": ("IMAGE",),
+            }
+        }
+
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("combined_images",)
+    FUNCTION = "concatenate_images"
+    CATEGORY = "S3/Image Processing"
+    
+    @classmethod
+    def VALIDATE_INPUTS(s, **kwargs):
+        return True
+    
+    def concatenate_images(self, images_1, images_2):
+        """
+        Concatenate two lists of images into one list.
+        """
+        try:
+            print(f"DEBUG: ConcatenateImageLists called with {len(images_1) if images_1 is not None else 0} images in list 1 and {len(images_2) if images_2 is not None else 0} images in list 2")
+            
+            # Handle None inputs
+            if images_1 is None:
+                images_1 = []
+            if images_2 is None:
+                images_2 = []
+            
+            # Convert to lists if they're not already
+            if not isinstance(images_1, (list, tuple)):
+                images_1 = [images_1] if images_1 is not None else []
+            if not isinstance(images_2, (list, tuple)):
+                images_2 = [images_2] if images_2 is not None else []
+            
+            # Concatenate the two lists
+            combined_images = list(images_1) + list(images_2)
+            
+            print(f"DEBUG: Successfully concatenated {len(images_1)} + {len(images_2)} = {len(combined_images)} images")
+            
+            # Convert to tensor if needed
+            if len(combined_images) > 0 and isinstance(combined_images[0], torch.Tensor):
+                # Stack all images into a single tensor
+                combined_tensor = torch.stack(combined_images, dim=0)
+                return (combined_tensor,)
+            else:
+                # Return as list if not tensors
+                return (combined_images,)
+            
+        except Exception as e:
+            print(f"ERROR in ConcatenateImageLists: {str(e)}")
+            raise e
+
+
 class MultiLineTextInput:
     """
     Multi-line text input node that allows adding multiple lines of text with labels.
@@ -1122,6 +1240,8 @@ NODE_CLASS_MAPPINGS = {
     "S3SaveVideoExportPath": S3SaveVideoExportPath,
     "S3SaveAudioExportPath": S3SaveAudioExportPath,
     "S3CombineImagesToVideo": S3CombineImagesToVideo,
+    "GetLastImage": GetLastImage,
+    "ConcatenateImageLists": ConcatenateImageLists,
     "MultiLineTextInput": MultiLineTextInput,
 }
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -1131,5 +1251,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "S3SaveVideoExportPath": "Save Video Export Path",
     "S3SaveAudioExportPath": "Save Audio Export Path",
     "S3CombineImagesToVideo": "S3 Combine Images to Video",
+    "GetLastImage": "Get Last Image",
+    "ConcatenateImageLists": "Concatenate Image Lists",
     "MultiLineTextInput": "Multi-Line Text Input",
 }
