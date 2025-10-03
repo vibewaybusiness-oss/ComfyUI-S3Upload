@@ -1158,8 +1158,8 @@ class ConcatenateImageLists:
             
             # Convert to tensor if needed
             if len(combined_images) > 0 and isinstance(combined_images[0], torch.Tensor):
-                # Stack all images into a single tensor
-                combined_tensor = torch.stack(combined_images, dim=0)
+                # Concatenate all images along the batch dimension
+                combined_tensor = torch.cat(combined_images, dim=0)
                 return (combined_tensor,)
             else:
                 # Return as list if not tensors
